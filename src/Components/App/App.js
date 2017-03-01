@@ -1,9 +1,9 @@
 import React, { Component } from 'react'
-import './App.css'
+import { getData, insertTask, updateStatusData, updateDescData, deleteNote, updateAllNotes, deleteCompletedNotes } from './Api'
 import Header from '../Header/Header.jsx'
 import ItemList from '../ItemList/ItemList.jsx'
 import Footer from '../Footer/Footer.jsx'
-import axios from 'axios'
+import './App.css'
 class App extends Component {
   constructor(props) {
     super(props)
@@ -12,18 +12,16 @@ class App extends Component {
     }
   }
   componentDidMount() {
-    axios.get('http://localhost:3010/read').then((response) => {
+    getData().then((response) => {
       this.setState({
         items: response.data
       })
     })
   }
-  
+
   appendToItems(description) {
     const prevItems = this.state.items
-    fetch(`http://localhost:3010/write/${description}`, { method: 'post' }).then((response) => {
-      return response.json()
-    })
+    insertTask(description)
       .then((data) => {
         let newItem = { id: data[0].id, description: description, status: false }
         prevItems.push(newItem)
@@ -34,20 +32,9 @@ class App extends Component {
   }
   updateStatus(id, status) {
     const prevItems = this.state.items
-    let data = {
-      status: status
-    }
-    fetch(`http://localhost:3010/update/${id}`, {
-      method: 'put',
-      body: JSON.stringify(data),
-      headers: {
-        'Content-type': 'application/json'
-      }
-    }).then(() => {
-      prevItems.forEach((item) => {
-        if (item.id === id)
-          item.status = status
-      })
+    updateStatusData(id, status).then(() => {
+      let index = prevItems.findIndex(x => x.id === id)
+      prevItems[index].status = status
       this.setState({
         items: prevItems
       })
@@ -55,20 +42,9 @@ class App extends Component {
   }
   updateTask(id, description) {
     const prevItems = this.state.items
-    let data = {
-      description: description,
-    }
-    return fetch(`http://localhost:3010/update/${id}`, {
-      method: 'put',
-      body: JSON.stringify(data),
-      headers: {
-        'Content-type': 'application/json'
-      }
-    }).then(() => {
-      prevItems.forEach((item) => {
-        if (item.id === id)
-          item.description = description
-      })
+    updateDescData(id, description).then(() => {
+      let index = prevItems.findIndex(x => x.id === id)
+      prevItems[index].description = description
       this.setState({
         items: prevItems
       })
@@ -76,7 +52,7 @@ class App extends Component {
   }
   deleteTask(id) {
     const prevItems = this.state.items.filter((item) => item.id !== id)
-    fetch(`http://localhost:3010/destroy/${id}`, { method: 'delete' }).then(() => {
+    deleteNote(id).then(() => {
       this.setState({
         items: prevItems
       })
@@ -87,12 +63,7 @@ class App extends Component {
       item.status = status
       return item
     })
-    fetch(`http://localhost:3010/updateAll/${status}`, {
-      method: 'put',
-      headers: {
-        'Content-type': 'application/json'
-      }
-    }).then(() => {
+    updateAllNotes(status).then(() => {
       this.setState({
         items: prevItems
       })
@@ -100,7 +71,7 @@ class App extends Component {
   }
   clearCompleted() {
     const prevItems = this.state.items.filter((item) => item.status === false)
-    fetch('http://localhost:3010/destroyAll', { method: 'delete' }).then(
+    deleteCompletedNotes().then(
       this.setState({
         items: prevItems
       })
